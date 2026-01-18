@@ -1,75 +1,87 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 import os
 import shutil
-import uuid
-from services.ai_service import analyze_video_and_generate_cbt
+import certifi
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+from pymongo import MongoClient
+import gridfs
+from datetime import datetime, timezone
+from ai_service import analyze_video_and_generate_cbt, analyze_yes_no # Gabung import di sini
 
-app = FastAPI(title="BEACON.ai Backend - Final")
-
+app = FastAPI()
 app.add_middleware(
     CORSMiddleware, 
-    allow_origins=["*"],  # Change this when deploying later
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"], 
+    allow_methods=["*"], 
+    allow_headers=["*"]
 )
 
-UPLOAD_DIR = "temp_videos"
-VOICE_DIR = "vocie_notes"
-os.makedirs(UPLOAD_DIR, exist_oke=True)
-os.makedirs(VOICE_DIR, exist_ok=True)
+# --- DATABASE SETUP ---
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+try:
+    mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+    db = mongo_client.beacon_db
+    fs = gridfs.GridFS(db)
+    print("✅ Berhasil terhubung ke MongoDB Atlas")
+except Exception as e:
+    print(f"❌ Gagal koneksi Database: {e}")
 
-@app.get("/")
-def read_root():
-    return {"status": "BEACON.ai Backend is running"}
+# --- ROUTES ---
 
-@app.post("api/session/start")
-async def start_cbt_session(
-    addiction_type: str = Form(...),
-    video: UploadFile = File(...)
-):
-    file_id = str(uuid.uuid4())
-    video_filename = f"{file_id}_{video.filename}"
-    temp_path = os.path.join(UPLOAD_DIR, video_filename)
-
+# 1. ANALISA AWAL (Video 15 detik)
+@app.post("/api/session/start")
+async def start_session(file: UploadFile = File(...), addiction_type: str = Form(...)):
+    temp_path = f"temp_{file.filename}"
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
     try:
-        with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(video.file, buffer)
+        analysis = await analyze_video_and_generate_cbt(temp_path, addiction_type)
+        try:
+            db.checkins.insert_one({
+                "user_id": "user_001",
+                "type": "initial_scan",
+                "analysis": analysis,
+                "timestamp": datetime.now(timezone.utc)
+            })
+        except Exception as e:
+            print(f"⚠️ DB Error: {e}")
+        return analysis
+    finally:
+        if os.path.exists(temp_path): os.remove(temp_path)
 
-        cbt_roadmap = await analyze_video_and_generate_cbt(temp_path, addiction_type)
-
-        return{
-            "success": True,
-            "addiction_type": addiction_type,
-            "data": cbt_roadmap
-        }
-
-    except Exception as e:
-        print(f"CRITICAL ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"AI Processing Failed: {str(e)}")
-    
-@app.post("/api/voice/save")
-async def save_voice_note(
-    user_id: str = Form(...),
-    voice_file: UploadFile = File(...)
-):
+# 2. ANALISA YES/NO (Decision Akhir)
+@app.post("/api/analyze-voice-decision")
+async def analyze_decision(file: UploadFile = File(...)):
+    temp_audio = f"decision_{file.filename}"
+    with open(temp_audio, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
     try:
-        voice_id = str(uuid.uuid4())
-        save_path = os.path.join(VOICE_DIR, f"{user_id}_{voice_id}.webm")
+        decision = await analyze_yes_no(temp_audio)
+        return {"decision": decision} 
+    finally:
+        if os.path.exists(temp_audio): os.remove(temp_audio)
 
-        with open(save_path, "wb") as buffer:
-            shutil.copyfileobj(voice_file.file, buffer)
-
-        return {"status": "success", "message": "Voice note saved for therapist review."}
+# 3. SIMPAN SUARA (Log Opsional)
+@app.post("/save-voice-response")
+async def save_voice(file: UploadFile = File(...), addiction_type: str = Form(...)):
+    try:
+        audio_data = await file.read()
+        file_id = fs.put(
+            audio_data, 
+            filename=f"response_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.webm",
+            metadata={"user_id": "user_001", "addiction": addiction_type}
+        )
+        db.voice_logs.insert_one({
+            "user_id": "user_001",
+            "audio_file_id": file_id,
+            "timestamp": datetime.now(timezone.utc)
+        })
+        return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save voice note: {str(e)}")
-    
-    if __name__ == "__main__":
-        import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8000)
+        return {"success": False, "error": str(e)}
 
-
-    
-
-
+# --- START SERVER ---
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
