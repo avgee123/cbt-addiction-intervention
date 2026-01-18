@@ -12,7 +12,7 @@ from ai_service import analyze_video_and_generate_cbt
 
 app = FastAPI()
 
-# --- MIDDLEWARE ---
+# MIDDLEWARE
 app.add_middleware(
     CORSMiddleware, 
     allow_origins=["*"], 
@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# --- DATABASE SETUP ---
+# DATABASE
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 try:
     # Menggunakan certifi agar koneksi ke MongoDB Atlas lancar
@@ -31,7 +31,7 @@ try:
 except Exception as e:
     print(f"❌ Gagal koneksi Database: {e}")
 
-# --- ROUTES ---
+# ROUTES 
 
 @app.post("/api/session/start")
 async def start_session(file: UploadFile = File(...), addiction_type: str = Form(...)):
@@ -40,10 +40,10 @@ async def start_session(file: UploadFile = File(...), addiction_type: str = Form
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        # Jalankan Analisis Gemini
+        # Gemini Analisis
         analysis = await analyze_video_and_generate_cbt(temp_path, addiction_type)
         
-        # SIMPAN LOG KE MONGODB (Ini yang tadi hilang, sekarang sudah balik)
+        # Saving log to mongodb
         try:
             db.checkins.insert_one({
                 "user_id": "user_001",

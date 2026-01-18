@@ -6,10 +6,8 @@ from fastapi import UploadFile
 import shutil
 from dotenv import load_dotenv
 
-# 1. KONFIGURASI API KEY
-load_dotenv()
 
-# Ambil API Key dari environment variable
+load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
@@ -19,11 +17,10 @@ async def analyze_video_and_generate_cbt(video_path: str, addiction_type: str):
     menghasilkan roadmap CBT yang akurat.
     """
     
-    # Inisialisasi Model
+    #AI Model
     model = genai.GenerativeModel('gemini-2.5-flash')
     
-    # --- PROSES PEMBACAAN KNOWLEDGE (.txt) ---
-    # Membaca protokol spesifik dari folder knowledge
+    #Protocols from knowledge
     protocol_content = ""
     txt_path = f"knowledge/{addiction_type}_protocols.txt"
     
@@ -33,11 +30,11 @@ async def analyze_video_and_generate_cbt(video_path: str, addiction_type: str):
     else:
         protocol_content = "Follow standard CBT grounding techniques for emotional regulation."
 
-    # 2. UPLOAD VIDEO KE GOOGLE CLOUD
+    #Video uploaded to Google Cloud
     print(f"Uploading {video_path} to Gemini...")
     video_file = genai.upload_file(path=video_path)
     
-    # Tunggu sampai Google selesai memproses video
+    #Wait until video processing ends
     while video_file.state.name == "PROCESSING":
         print("Gemini is still processing the video...")
         time.sleep(2)
@@ -46,7 +43,7 @@ async def analyze_video_and_generate_cbt(video_path: str, addiction_type: str):
     if video_file.state.name == "FAILED":
         raise Exception("Video processing failed on Gemini server.")
 
-    # 3. DEFINISI ASET AUDIO (Sesuai dengan file yang kamu miliki)
+    # Audio files
     audio_inventory = {
         "Nicotine": [
             "validation_nic", "breath_intro", "inhale_exhale", 
@@ -65,7 +62,7 @@ async def analyze_video_and_generate_cbt(video_path: str, addiction_type: str):
         ]
     }
 
-    # 4. PROMPT ENGINEERING (Menghubungkan Video + Knowledge + Audio)
+    # PROMPT
     prompt = f"""
     You are a professional CBT Therapist AI. Analyze this 15-second video of a user struggling with {addiction_type} craving.
     
@@ -99,11 +96,11 @@ async def analyze_video_and_generate_cbt(video_path: str, addiction_type: str):
     }}
     """
 
-    # 5. GENERATE CONTENT
+    # GENERATE CONTENT
     print("Gemini is analyzing with knowledge integration...")
     response = model.generate_content([prompt, video_file])
     
-    # 6. PARSING & CLEANUP
+    # PARSING & CLEANUP
     try:
         raw_text = response.text.replace('```json', '').replace('```', '').strip()
         result = json.loads(raw_text)

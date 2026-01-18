@@ -1,5 +1,7 @@
 import os
 
+#UNUSED IN THE END
+
 def get_protocol(addiction_type):
     """
     Mengambil teks protokol lengkap dari folder /knowledge/*.txt
