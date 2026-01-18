@@ -21,5 +21,5 @@ User safety is our priority. All video and audio data is processed through the G
 
 ## 🚀 How It Works
 1. **15-Second Check-in:** The user records a short video describing their current state.
-2. **Multimodal Analysis:** Gemini 3 Flash detects micro-expressions of anxiety and vocal instability.
+2. **Multimodal Analysis:** Gemini 2.5 Flash detects micro-expressions of anxiety and vocal instability.
 3. **Instant Intervention:** If a crisis is detected, an ElevenLabs voice agent provides a calm, guided CBT session to help the user stay grounded.
