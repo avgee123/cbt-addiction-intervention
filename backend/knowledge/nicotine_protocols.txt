@@ -1,14 +1,17 @@
-PROTOCOL: Nicotine Addiction Recovery (CBT-Based)
-CORE FOCUS: Urge Surfing and Cognitive Restructuring.
+NICOTINE RELAPSE PREVENTION PROTOCOL (CBT-BASED)
 
-SCIENTIFIC CONTEXT: Nicotine cravings usually peak within 5-10 minutes. The goal is to "ride out" the wave without acting on it.
+CORE OBJECTIVE: 
+Intercept nicotine cravings during their 3-5 minute peak using Urge Surfing and Sensory Grounding.
 
-THERAPEUTIC STEPS:
-1. FUNCTIONAL ANALYSIS: Identify triggers (e.g., morning coffee, stress, social circles).
-2. THE 4D STRATEGY: 
-   - Delay: Wait 10 minutes (the craving will subside).
-   - Deep Breath: Reset the nervous system.
-   - Drink Water: Oral fixation replacement.
-   - Do something else: Cognitive distraction.
-3. COGNITIVE REFRAMING: Shift from "I need a cigarette to relax" to "Nicotine creates the stress it claims to solve; breathing is what actually relaxes me."
-4. PHYSICAL RELEASE: Focus on shoulder and jaw tension (common nicotine withdrawal spots).
+PSYCHOLOGICAL STEPS:
+1. Validation: Acknowledge that nicotine withdrawal causes chemical anxiety. This is not a personal failure, but a brain reset.
+2. Physiological De-escalation: Use 'breath_intro' and 'inhale_exhale' to lower the heart rate. Nicotine addicts often have shallow breathing during cravings.
+3. Oral Fixation Replacement: Use 'sip_water' to simulate the throat hit sensation and hydrate the body.
+4. Physical Discharge: Use 'clench_fists' to release accumulated cortisol and aggressive energy.
+5. Sensory Redirection: Use 'sensory_nic_blue_object' and 'sensory_nic_textured_object' to move brain activity from the amygdala (emotional craving) to the prefrontal cortex (rational observation).
+6. Cognitive Reframing: Use 'nicotine_logic' to remind the user that smoking one cigarette only restarts the withdrawal clock, it doesn't end it.
+7. Future Self: Use 'future_self' to anchor the user to a long-term goal of clean lungs and freedom.
+
+GUIDELINES FOR AI ANALYSIS:
+If the user shows "Restlessness" (shifting eyes, touching face/neck), prioritize Sensory Grounding. 
+If the user shows "High Anxiety" (fast breathing, trembling voice), prioritize Breathing protocols.

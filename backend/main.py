@@ -6,9 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 import gridfs
 from datetime import datetime, timezone
-from ai_service import analyze_video_and_generate_cbt, analyze_yes_no # Gabung import di sini
+
+# Import service AI kita
+from ai_service import analyze_video_and_generate_cbt
 
 app = FastAPI()
+
+# --- MIDDLEWARE ---
 app.add_middleware(
     CORSMiddleware, 
     allow_origins=["*"], 
@@ -19,6 +23,7 @@ app.add_middleware(
 # --- DATABASE SETUP ---
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 try:
+    # Menggunakan certifi agar koneksi ke MongoDB Atlas lancar
     mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
     db = mongo_client.beacon_db
     fs = gridfs.GridFS(db)
@@ -28,7 +33,6 @@ except Exception as e:
 
 # --- ROUTES ---
 
-# 1. ANALISA AWAL (Video 15 detik)
 @app.post("/api/session/start")
 async def start_session(file: UploadFile = File(...), addiction_type: str = Form(...)):
     temp_path = f"temp_{file.filename}"
@@ -36,34 +40,29 @@ async def start_session(file: UploadFile = File(...), addiction_type: str = Form
         shutil.copyfileobj(file.file, buffer)
     
     try:
+        # Jalankan Analisis Gemini
         analysis = await analyze_video_and_generate_cbt(temp_path, addiction_type)
+        
+        # SIMPAN LOG KE MONGODB (Ini yang tadi hilang, sekarang sudah balik)
         try:
             db.checkins.insert_one({
                 "user_id": "user_001",
-                "type": "initial_scan",
-                "analysis": analysis,
+                "addiction_type": addiction_type,
+                "analysis_summary": analysis.get("analysis"),
+                "roadmap": analysis.get("session_roadmap"),
                 "timestamp": datetime.now(timezone.utc)
             })
+            print("✅ Log berhasil disimpan ke MongoDB")
         except Exception as e:
             print(f"⚠️ DB Error: {e}")
+            
         return analysis
+        
     finally:
-        if os.path.exists(temp_path): os.remove(temp_path)
+        if os.path.exists(temp_path): 
+            os.remove(temp_path)
 
-# 2. ANALISA YES/NO (Decision Akhir)
-@app.post("/api/analyze-voice-decision")
-async def analyze_decision(file: UploadFile = File(...)):
-    temp_audio = f"decision_{file.filename}"
-    with open(temp_audio, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    try:
-        decision = await analyze_yes_no(temp_audio)
-        return {"decision": decision} 
-    finally:
-        if os.path.exists(temp_audio): os.remove(temp_audio)
-
-# 3. SIMPAN SUARA (Log Opsional)
-@app.post("/save-voice-response")
+@app.post("/api/save-voice-response")
 async def save_voice(file: UploadFile = File(...), addiction_type: str = Form(...)):
     try:
         audio_data = await file.read()
@@ -81,7 +80,10 @@ async def save_voice(file: UploadFile = File(...), addiction_type: str = Form(..
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-# --- START SERVER ---
+@app.get("/")
+async def root():
+    return {"status": "Beacon.ai Backend is Running"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

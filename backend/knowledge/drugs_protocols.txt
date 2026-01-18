@@ -1,11 +1,16 @@
-PROTOCOL: Substance Abuse & Heavy Urge Management (CBT-Based)
-CORE FOCUS: Safety Planning and Sensory Grounding.
+SUBSTANCE/DRUGS RELAPSE PREVENTION PROTOCOL (CBT-BASED)
 
-SCIENTIFIC CONTEXT: High-intensity cravings for substances can cause "tunnel vision." The priority is physical safety and immediate sensory interruption.
+CORE OBJECTIVE: 
+De-escalate intense physical cravings and intrusive thoughts. Focus on high-intensity grounding and safety.
 
-THERAPEUTIC STEPS:
-1. ENVIRONMENT RESET: Move to a "Neutral Zone." If indoors, go outdoors; if seated, stand up.
-2. BOX BREATHING: Inhale 4s, Hold 4s, Exhale 4s, Hold 4s. This down-regulates the fight-or-flight response.
-3. URGE SURFING: Visualize the urge as an ocean wave. You are the surfer. The wave is big, but it will eventually break and wash away. You don't have to fight the wave; you just have to stay on the board.
-4. EMERGENCY COGNITIVE TASK: Count backward from 100 by 7s. This forces the prefrontal cortex (rational brain) to override the limbic system (impulsive brain).
-5. AFFIRMATION: "This feeling is temporary. I have survived 100% of my worst days so far."
+PSYCHOLOGICAL STEPS:
+1. Validation: Use 'validation_drugs' to identify the intensity of the urge. Acknowledge that the brain is currently "misfiring" and needs a reset.
+2. High-Intensity Breathing: Use 'breath_intro' and 'inhale_exhale' to re-oxygenate the brain and provide a sense of physical control.
+3. Resistance Training: Use 'grip_reality' (pressing palms against a wall). This uses large muscle groups to discharge excess nervous energy.
+4. Auditory/Tactile Shock: Use 'sensory_shock' (clapping/rubbing hands) to break the cycle of obsessive "tunnel vision" toward the drug.
+5. Emergency Logic: Use 'logic_emergency' to play the tape until the end—focusing on the legal, health, and personal chaos caused by a relapse.
+6. Internal Shielding: Use 'internal_anchor' to build a mental barrier against the craving.
+
+AI GUIDELINES:
+- If user looks "Paranoid" or "Extremely Restless", prioritize 'grip_reality' and 'sensory_shock'.
+- If user looks "Withdrawn", prioritize 'breath_intro' and 'logic_emergency'.

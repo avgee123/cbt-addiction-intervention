@@ -1,11 +1,15 @@
-PROTOCOL: Alcohol Use Disorder Intervention (CBT-Based)
-CORE FOCUS: Stimulus Control and Hydration-Reset.
+ALCOHOL RELAPSE PREVENTION PROTOCOL (CBT-BASED)
 
-SCIENTIFIC CONTEXT: Alcohol urges are often tied to emotional regulation deficits. CBT focuses on "HALT" (Hungry, Angry, Lonely, Tired) triggers.
+CORE OBJECTIVE: 
+Manage the emotional "weight" and the desire for escape/numbness. Alcohol cravings often stem from emotional dysregulation.
 
-THERAPEUTIC STEPS:
-1. STIMULUS CONTROL: Immediately remove alcohol from sight/environment.
-2. SOMATIC GROUNDING: Use the 5-4-3-2-1 technique to reconnect with the present moment and reduce impulsivity.
-3. COGNITIVE CHALLENGE: Play the tape to the end. Don't just think about the first drink; visualize the hangover, the regret, and the lost progress.
-4. BEHAVIORAL ACTIVATION: Engage in a high-sensory task (like splashing cold water on the face) to break the "craving loop."
-5. HYDRATION: Drink two glasses of cold water to simulate the ritual of drinking while cleansing the palate.
+PSYCHOLOGICAL STEPS:
+1. Validation: Use 'validation_alc' to acknowledge the "heavy" feeling or the need to escape. Validate that alcohol is a depressant that increases anxiety the next day.
+2. Shock Response: Use 'ice_sensation' (Cold Water/Ice) to trigger the Mammalian Dive Reflex. This is the fastest way to lower heart rate and snap out of an emotional spiral.
+3. Body Awareness: Use 'body_scan_alc' to identify where the user is holding tension (jaw, chest, shoulders) and release it.
+4. Anchoring: Use 'anchor_grounding' to focus on heavy physical objects. This counters the "blur" or "lightheadedness" associated with alcohol cravings.
+5. Cognitive Reinforcement: Use 'power_affirmation' to build self-efficacy. Remind the user they are choosing clarity over temporary numbness.
+
+AI GUIDELINES:
+- If user looks "Sad" or "Numb", prioritize 'body_scan_alc' and 'power_affirmation'.
+- If user looks "Frustrated" or "Aggressive", prioritize 'ice_sensation'.

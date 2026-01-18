@@ -1,55 +1,124 @@
 import os
-import google.generativeai as genai
 import json
 import time
+import google.generativeai as genai
+from fastapi import UploadFile
+import shutil
 from dotenv import load_dotenv
 
+# 1. KONFIGURASI API KEY
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-async def analyze_video_and_generate_cbt(video_path, addiction_type):
-    video_file = genai.upload_file(path=video_path)
-    while video_file.state.name == "PROCESSING":
-        time.sleep(1)
-        video_file = genai.get_file(video_file.name)
+# Ambil API Key dari environment variable
+api_key = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=api_key)
 
+async def analyze_video_and_generate_cbt(video_path: str, addiction_type: str):
+    """
+    Menganalisis video user dan membaca file protokol .txt untuk 
+    menghasilkan roadmap CBT yang akurat.
+    """
+    
+    # Inisialisasi Model
     model = genai.GenerativeModel('gemini-2.5-flash')
     
-    # KNOWLEDGE MAPPING:
-    # Nicotine -> nicotine_fix
-    # Alcohol -> alcohol_cold
-    # Drugs -> grounding_heavy
+    # --- PROSES PEMBACAAN KNOWLEDGE (.txt) ---
+    # Membaca protokol spesifik dari folder knowledge
+    protocol_content = ""
+    txt_path = f"knowledge/{addiction_type}_protocols.txt"
     
-    prompt = f"""
-    ROLE: Expert CBT Therapist for {addiction_type}.
-    TASK: Based on the video, create 7-10 steps for the therapy roadmap.
-    
-    AVAILABLE AUDIOS: 
-    - Basic: ['exhale', 'breath_nasal', 'meditation_start', 'meditation_music', 'stretch', 'grounding_mp3', 'affirmation', 'stress_check']
-    - Specific: ['nicotine_fix', 'alcohol_cold', 'grounding_heavy']
+    if os.path.exists(txt_path):
+        with open(txt_path, "r") as f:
+            protocol_content = f.read()
+    else:
+        protocol_content = "Follow standard CBT grounding techniques for emotional regulation."
 
-    DIRECTIONS:
-    1. Step 1 is ALREADY DONE (Distance). 
-    2. Start from Step 2 using 'intro_generic'.
-    3. From Step 3 to Step 9, pick from AVAILABLE AUDIOS based on user's emotion in video.
-    4. If Nicotine, include 'nicotine_fix'. If Alcohol, 'alcohol_cold'. If Drugs, 'grounding_heavy'.
-    5. Always include 'stress_check' at least once in the middle.
+    # 2. UPLOAD VIDEO KE GOOGLE CLOUD
+    print(f"Uploading {video_path} to Gemini...")
+    video_file = genai.upload_file(path=video_path)
     
-    OUTPUT JSON:
+    # Tunggu sampai Google selesai memproses video
+    while video_file.state.name == "PROCESSING":
+        print("Gemini is still processing the video...")
+        time.sleep(2)
+        video_file = genai.get_file(video_file.name)
+    
+    if video_file.state.name == "FAILED":
+        raise Exception("Video processing failed on Gemini server.")
+
+    # 3. DEFINISI ASET AUDIO (Sesuai dengan file yang kamu miliki)
+    audio_inventory = {
+        "Nicotine": [
+            "validation_nic", "breath_intro", "inhale_exhale", 
+            "sip_water", "clench_fists", "sensory_nic_blue_object", 
+            "sensory_nic_textured_object", "nicotine_logic", "future_self"
+        ],
+        "Alcohol": [
+            "validation_alc", "breath_intro", "inhale_exhale", 
+            "ice_sensation", "body_scan_alc", "power_affirmation", 
+            "anchor_grounding"
+        ],
+        "Drugs": [
+            "validation_drugs", "breath_intro", "inhale_exhale", 
+            "grip_reality", "sensory_shock", "logic_emergency", 
+            "internal_anchor"
+        ]
+    }
+
+    # 4. PROMPT ENGINEERING (Menghubungkan Video + Knowledge + Audio)
+    prompt = f"""
+    You are a professional CBT Therapist AI. Analyze this 15-second video of a user struggling with {addiction_type} craving.
+    
+    REFERENCE PROTOCOL (Read this carefully):
+    {protocol_content}
+    
+    INSTRUCTIONS:
+    1. Evaluate their stress level through facial micro-expressions and vocal tone.
+    2. Construct a 7-step CBT roadmap using ONLY these audio files: {audio_inventory[addiction_type]}.
+    
+    STRICT RULES:
+    - ALWAYS start with 'validation_{addiction_type.lower()[:3]}'.
+    - Use the 'REFERENCE PROTOCOL' above to decide which grounding technique fits the user's expression.
+    - If user looks very tense, include 'breath_intro' then 'inhale_exhale' early.
+    - Do NOT include 'distance', 'stress_check', or 'decision_prompt'.
+    
+    OUTPUT FORMAT (JSON ONLY):
+
     {{
+
+      "analysis": "Brief explanation of user's state",
+
       "session_roadmap": [
-        {{ "step": 2, "text": "I've analyzed your state. Let's begin.", "audio_type": "intro_generic" }},
-        {{ "step": 3, "text": "...", "audio_type": "..." }}
+
+        {{"step": 1, "audio_type": "filename_from_inventory"}},
+
+        ...
+
       ]
+
     }}
     """
-    response = model.generate_content([prompt, video_file])
-    return json.loads(response.text.replace("```json", "").replace("```", "").strip())
 
-# Logic baru untuk cek Yes/No di akhir sesi
-async def analyze_yes_no(audio_path):
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    audio_file = genai.upload_file(path=audio_path)
-    prompt = "Listen to this audio. Did the user say 'Yes' (they feel better) or 'No' (still struggling)? Answer only with one word: YES or NO."
-    response = model.generate_content([prompt, audio_file])
-    return response.text.strip().upper()
+    # 5. GENERATE CONTENT
+    print("Gemini is analyzing with knowledge integration...")
+    response = model.generate_content([prompt, video_file])
+    
+    # 6. PARSING & CLEANUP
+    try:
+        raw_text = response.text.replace('```json', '').replace('```', '').strip()
+        result = json.loads(raw_text)
+        print(f"✅ Roadmap generated based on {addiction_type}_protocols.txt")
+        return result
+        
+    except Exception as e:
+        print(f"❌ Error Parsing: {e}")
+        return {
+            "analysis": "Standard protocol applied due to parsing error.",
+            "session_roadmap": [
+                {"step": 1, "audio_type": f"validation_{addiction_type.lower()[:3]}"},
+                {"step": 2, "audio_type": "breath_intro"},
+                {"step": 3, "audio_type": "inhale_exhale"}
+            ]
+        }
+    finally:
+        genai.delete_file(video_file.name)
